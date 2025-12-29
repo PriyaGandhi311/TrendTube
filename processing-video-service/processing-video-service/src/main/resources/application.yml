@@ -17,7 +17,7 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
     
 api:
-  key: ${API_KEY:your-api-key-here}
+  key: ${API_KEY:AIzaSyBD21o-kqo8fDg83gAT94NvS5yIkjGo_WE}
 
 springdoc:
   swagger-ui:

@@ -15,7 +15,7 @@ import com.trendtube.processing_video_service.entity.Video;
 import com.trendtube.processing_video_service.repository.VideoRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Content; 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -38,6 +38,7 @@ public class VideoController {
         @ApiResponse(responseCode = "200", description = "Returns true if video exists, false otherwise",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = Boolean.class)))
     })
+    
     @GetMapping("/{videoId}/exists")
     public ResponseEntity<Boolean> checkVideoExists(@PathVariable String videoId) {
         boolean exists = videoRepository.existsById(videoId);

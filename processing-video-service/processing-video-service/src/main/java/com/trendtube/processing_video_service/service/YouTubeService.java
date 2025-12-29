@@ -18,18 +18,19 @@ import com.trendtube.processing_video_service.repository.VideoRepository;
 public class YouTubeService {
 
     private final VideoRepository videoRepository;
+    private final RestTemplate restTemplate;
+
+    @Value("${api.key}")
+    private String apiKey;
 
     @Autowired
     public YouTubeService(VideoRepository videoRepository) {
         this.videoRepository = videoRepository;
+        this.restTemplate = new RestTemplate();
     }
-        
-    @Value("${api.key}")
-    private String apiKey;
+
     public void fetchAndSaveMetadata(String videoId) {
         String url = "https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=" + videoId + "&key=" + apiKey;
-
-    RestTemplate restTemplate = new RestTemplate();
     ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
     JSONObject json = new JSONObject(response.getBody());

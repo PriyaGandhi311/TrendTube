@@ -18,6 +18,8 @@ import com.trendtube.analytics_service.entity.EngagementSnapshot;
 import com.trendtube.analytics_service.entity.Video;
 import com.trendtube.analytics_service.repository.EngagementRepository;
 import com.trendtube.analytics_service.repository.VideoRepository;
+import com.trendtube.analytics_service.entity.UserFavorite;
+import com.trendtube.analytics_service.repository.UserFavoriteRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 
@@ -25,9 +27,14 @@ import io.swagger.v3.oas.annotations.Operation;
 @RequestMapping("/analytics")
 @CrossOrigin(origins = "http://localhost:3000") // allow frontend access
 public class AnalyticsController {
+    public record VideoComparison(String title, Long viewCount){}
 
     @Autowired
     private VideoRepository videoRepository;
+    @Autowired
+    private UserFavoriteRepository userFavoriteRepository;
+    
+    @Autowired
     private EngagementRepository engagementRepository;
 
     @Operation(summary = "Get top 10 trending videos by view count")
@@ -70,4 +77,16 @@ public class AnalyticsController {
         return ResponseEntity.ok(engagementRepository.findByVideoIdOrderByDateAsc(videoId));
     }
 
+    @Operation(summary = "Compare all user's favorite video's view counts")
+    @GetMapping("/compareAll/{userId}")
+    public ResponseEntity<List<VideoComparison>> compareViewCounts(@PathVariable String userId) {
+        
+        List<String> videoIds = userFavoriteRepository.findByUserId(userId).stream().map(UserFavorite::getVideoId).toList();
+        List<Video> videos = videoRepository.findAllById(videoIds);
+        List<VideoComparison> results = videos.stream()
+            .map(v -> new VideoComparison(v.getTitle(), v.getViewCount()))
+            .toList();
+
+        return ResponseEntity.ok(results);
+    }
 }

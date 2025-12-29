@@ -1,12 +1,11 @@
 package com.trendtube.analytics_service.controller;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trendtube.analytics_service.entity.UserFavorite;
+import com.trendtube.analytics_service.entity.Video;
 import com.trendtube.analytics_service.repository.UserFavoriteRepository;
+import com.trendtube.analytics_service.repository.VideoRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.transaction.Transactional;
@@ -32,11 +31,14 @@ import jakarta.transaction.Transactional;
 @RequestMapping("/user")
 public class UserController {
 
-    private UserFavoriteRepository favoriteRepo;
-    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private final UserFavoriteRepository favoriteRepo;
+    private final VideoRepository videoRepo;
 
-    public UserController(UserFavoriteRepository favoriteRepo) {
+    @Autowired
+    public UserController(UserFavoriteRepository favoriteRepo, VideoRepository videoRepo) {
         this.favoriteRepo = favoriteRepo;
+        this.videoRepo = videoRepo;
     }
 
     @Transactional
@@ -57,22 +59,12 @@ public class UserController {
         return ResponseEntity.ok(exists);
     }
 
-    private String fetchTitleFromProcessor(String videoId) {
-        String url = "http://localhost:8080/api/upload/title/" + videoId;
-
-        try {
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode json = mapper.readTree(response.body());
-            return json.get("title").asText();
-        } catch (Exception e) {
-            e.printStackTrace();
+    private String fetchTitleFromVideoRepository(String videoId) {
+        Optional<Video> videoOpt = videoRepo.findById(videoId);
+        if (videoOpt.isPresent()) {
+            return videoOpt.get().getTitle();
+        } else {
+            logger.warn("Video not found for videoId: {}", videoId);
             return "Untitled Video";
         }
     }
@@ -81,7 +73,7 @@ public class UserController {
     @PostMapping("/{userId}/favorites")
     public ResponseEntity<String> addFavorite(@PathVariable String userId, @RequestBody Map<String, String> payload) {
         String videoId = payload.get("videoId");
-        String title = fetchTitleFromProcessor(videoId); // calls microservice
+        String title = fetchTitleFromVideoRepository(videoId); // uses video repository directly
         if (favoriteRepo.existsByUserIdAndVideoId(userId, videoId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Already favorited");
         }
